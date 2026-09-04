@@ -1,5 +1,6 @@
 from math import *
 import random
+from tk_inter_tut import *
 
 """Classes: 
 Player
@@ -70,6 +71,7 @@ class StaticBoard(Board):
             self.bombs_index.append(list([x, y]))
             self.grid[y][x] = '*'
 
+    # TO DO: bugs in place_numbers potentially around corner value
     # places how many bombs are near for each square
     def place_numbers(self):
         for x, y in self.bombs_index:
@@ -178,9 +180,3 @@ class Game:
                     (self.static_board.x * self.static_board.y) - self.static_board.bombs_count):
                 self.win = True
                 print("You Won!")
-
-
-p = Player("")
-static_board = StaticBoard(5, 5)
-game = Game(p, static_board)
-game.play()
