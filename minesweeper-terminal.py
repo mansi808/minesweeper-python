@@ -68,8 +68,9 @@ class StaticBoard(Board):
         for i in range(self.bombs_count):
             x = random.randint(0, self.x - 1)
             y = random.randint(0, self.y - 1)
-            self.bombs_index.append(list([x, y]))
-            self.grid[y][x] = '*'
+            if [x,y] not in self.bombs_index:
+                self.bombs_index.append(list([x, y]))
+                self.grid[y][x] = '*'
 
     # TO DO: bugs in place_numbers potentially around corner value
     # places how many bombs are near for each square
