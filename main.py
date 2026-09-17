@@ -1,62 +1,60 @@
 from Game import Game
 import sqlite3
 
-# create the databse
-# add values to the database from the game
 
-# TO DO: add a timer for the game as soon as the game starts and the main game window appears start timer
+# TO DO: delete older values of score if number of rows goies over 10 delete res of the rows
+class Database:
 
-# only add to the table if win
+    def __init__(self):
+        self.connection = sqlite3.connect("game.db")
+        self.cursor = self.connection.cursor()
 
-def create_database():
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS player (
-            id INTEGER PRIMARY KEY,
-            playerName TEXT
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS score (
-            id INTEGER PRIMARY KEY,
-            playerName TEXT,
-            score INTEGER,
-            FOREIGN KEY (playerName) REFERENCES playerName
-            )
-    """)
-
-def getCurrPlayerId():
-    cursor.execute("""
+    def create_db(self):
+        self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS player (
-                id INTEGER PRIMARY KEY,
-                playerName TEXT,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                playerName TEXT
             )
         """)
 
-def addPlayer(playerName):
-    command = "INSERT INTO player(id,playerName) VALUES (lower(hex(randomblob(4))),?)"
-    cursor.execute(command,(playerName))
-    connection.commit()
+        self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS score (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    playerId INTEGER,
+                    score INTEGER,
+                    FOREIGN KEY (playerId) REFERENCES Player(id)
+                    )
+            """)
 
-def addScore(scr, playerName):
-    command = "INSERT INTO score(id,playerName,score) VALUES (lower(hex(randomblob(4))),?,?)"
-    cursor.execute(command, (playerName,scr))
-    connection.commit()
+    def get_curr_playr_id(self):
+        self.cursor.execute('SELECT id FROM player ORDER BY id desc LIMIT 1')
+        return self.cursor.fetchone()[0]
 
+    def add_player(self,name):
+        self.cursor.execute('INSERT INTO player(playerName) VALUES (?)', (name,))
+        self.cursor.execute('SELECT * FROM player')
+        self.connection.commit()
 
+    def add_score(self,id, scr):
+        command = "INSERT INTO score(playerId,score) VALUES (?,?)"
+        self.cursor.execute(command, (id, scr))
+        self.cursor.execute("SELECT * FROM score")
+        self.connection.commit()
+
+    def get_leaderboard(self):
+        self.cursor.execute("SELECT p.playerName,s.score "
+                            "FROM score s INNER JOIN player p "
+                            "ON p.id=s.playerId "
+                            "ORDER BY s.score asc "
+                            "LIMIT 10")
+        return self.cursor.fetchall()
 
 if __name__ == "__main__":
-    connection = sqlite3.connect("game.db")
-    cursor = connection.cursor()
 
-    create_database()
-    x = 5
-    y = 10
-    game = Game(x ,y)
+    db = Database()
+    x = 2
+    y = 2
+    game = Game(x ,y,db)
     game.window.mainloop()
-
-    connection.commit()
-    connection.close()
 
 
