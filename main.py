@@ -1,61 +1,62 @@
-import tkinter as tk
-import tkinter.ttk as tkk
-from Player import Player
-from StaticBoard import StaticBoard
-from PlayingBoard import PlayingBoard
 from Game import Game
-from functools import partial
+import sqlite3
 
-# TO DO now when clicked I need to make sure the tile is revealed.
-# I can do so by comparing the row and column tile with the playing board which will be just a list
-def play(name):
-    initial_frm.destroy()
-    init_player(name)
-    init_game_frm()
-    init_boards()
+# create the databse
+# add values to the database from the game
 
-# initilaise the player class with player name from input
-def init_player(name):
-    player = Player(name)
-    print("initialised player:", player.name)
+# TO DO: add a timer for the game as soon as the game starts and the main game window appears start timer
 
-# create the game frame and move to the game frame
-def init_game_frm():
-    main_frm.pack()
-    board_frm.pack()
+# only add to the table if win
 
-def init_boards():
-    game.display_grid()
-    static_board.display_grid()
+def create_database():
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS player (
+            id INTEGER PRIMARY KEY,
+            playerName TEXT
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS score (
+            id INTEGER PRIMARY KEY,
+            playerName TEXT,
+            score INTEGER,
+            FOREIGN KEY (playerName) REFERENCES playerName
+            )
+    """)
+
+def getCurrPlayerId():
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS player (
+                id INTEGER PRIMARY KEY,
+                playerName TEXT,
+            )
+        """)
+
+def addPlayer(playerName):
+    command = "INSERT INTO player(id,playerName) VALUES (lower(hex(randomblob(4))),?)"
+    cursor.execute(command,(playerName))
+    connection.commit()
+
+def addScore(scr, playerName):
+    command = "INSERT INTO score(id,playerName,score) VALUES (lower(hex(randomblob(4))),?,?)"
+    cursor.execute(command, (playerName,scr))
+    connection.commit()
 
 
-loop = True
-while loop:
-    window = tk.Tk()
-    # Getting input from user to put in Player name class
 
-    initial_frm = tk.Frame()
-    initial_frm.pack(fill=tk.BOTH)
+if __name__ == "__main__":
+    connection = sqlite3.connect("game.db")
+    cursor = connection.cursor()
 
-    lbl_input = tk.Label(master=initial_frm,text="Enter Player Name")
-    ent_name = tk.Entry(master=initial_frm)
+    create_database()
+    x = 5
+    y = 10
+    game = Game(x ,y)
+    game.window.mainloop()
 
-    lbl_input.pack(fill=tk.BOTH)
-    ent_name.pack(fill=tk.BOTH)
+    connection.commit()
+    connection.close()
 
-    player = None
-    ent_button = tk.Button(master=initial_frm, text="Submit", command=partial(play,ent_name.get()))
-    ent_button.pack(fill=tk.BOTH)
 
-    main_frm = tk.Frame()
-    board_frm = tk.Frame(master=main_frm)
-
-    x = 12
-    y = 12
-    static_board = StaticBoard(x,y)
-    playing_board = PlayingBoard(x,y,board_frm,static_board)
-    game = Game(player,playing_board)
-
-# TO DO: When name is submit move to the next frame which is the game, use a new submit button and after submitting move to new frame
-
-    window.mainloop()

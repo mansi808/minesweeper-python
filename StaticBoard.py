@@ -40,7 +40,6 @@ class StaticBoard(Board):
     def place_numbers(self):
         print(self.bombs_index)
         for r, c in self.bombs_index:
-            print("row",r,"col",c)
             i = 0
             for m in range(-1, 2):
                 for n in range(-1, 2):
@@ -49,9 +48,7 @@ class StaticBoard(Board):
                         pass
                     else:
                         i += 1
-                        print("increased",i,"times","on", "row",r+m, "col",c+n)
                         self.grid[r + m][c + n] = str(int(self.grid[r + m][c + n]) + 1)
-            print(i)
     # check if this single grid box is safe ie has no bombs, parameters x,y
     def is_safe(self, r, c):
         return self.grid[r][c] != "*"
