@@ -54,6 +54,7 @@ if __name__ == "__main__":
     db = Database()
     x = 2
     y = 2
+    # if game ended show a pay again button
     game = Game(x ,y,db)
     game.window.mainloop()
 

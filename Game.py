@@ -25,6 +25,8 @@ Game - performs actions for that game
 class Game():
 
     def __init__(self,x,y,database):
+        self.x = x
+        self.y = y
         self.window = tk.Tk()
         self.set_window_properties()
         # Getting input from user to put in Player name class
@@ -51,10 +53,12 @@ class Game():
         self.curr_move = None
         # flag set at 0 initially, increases if a flag is placed on the board
         self.flags = 0
-
+        self.timer = Timer(self.topbar_frm)
+        # timer thread
+        self.timer_thread = threading.Thread(target=self.timer.work, daemon=True)
         self.database = database
         self.database.create_db()
-        self.timer = Timer(self.topbar_frm)
+
 
     def set_initial_frm(self):
         lbl_input = tk.Label(master=self.initial_frm, text="Enter Player Name")
@@ -109,32 +113,35 @@ class Game():
         # when a tile is clicked it can either be for placing flag or for opening
     def make_curr_move(self,r ,c):
 
-        self.set_curr_move(r ,c)
-        safe = self.playing_board.static_board.is_safe(self.curr_move[0], self.curr_move[1])
+        if not self.playing_board.is_played(r,c):
+            self.set_curr_move(r ,c)
+            safe = self.playing_board.static_board.is_safe(self.curr_move[0], self.curr_move[1])
         # player makes a move and then if safe proceeds, if not loses
-        if safe:
 
-            original_grid_value = int(self.playing_board.static_board.grid[self.curr_move[0]][self.curr_move[1]])
+            if safe:
+
+                original_grid_value = int(self.playing_board.static_board.grid[self.curr_move[0]][self.curr_move[1]])
             # reassign current block in playing_grid to new value
-            self.playing_board.increment_played_squares()
-            if self.playing_board.played_squares == 1:
-                self.start_timer_thread()
-            self.playing_board.set_grid_box(self.curr_move[0], self.curr_move[1], original_grid_value)
-            # if 0 is present on that block, find safe blocks around it until you get a bomb or a number greater than 0
-            if original_grid_value == 0:
-                self.playing_board.compute_safe_blocks(self.curr_move[0], self.curr_move[1])
+                self.playing_board.increment_played_squares()
+                if self.playing_board.played_squares == 1:  
+                    self.start_timer_thread()
+                self.playing_board.set_grid_box(self.curr_move[0], self.curr_move[1], original_grid_value)
+                # if 0 is present on that block, find safe blocks around it until you get a bomb or a number greater than 0
+                if original_grid_value == 0:
+                    self.playing_board.compute_safe_blocks(self.curr_move[0], self.curr_move[1])
 
-        else:
-            for r, c in self.playing_board.static_board.bombs_index:
-                self.playing_board.set_grid_box(r, c, self.playing_board.static_board.grid[r][c])
-            print("You Lost!")
-            self.display_result()
-        if self.playing_board.played_squares == (
+            else:
+                for r, c in self.playing_board.static_board.bombs_index:
+                    self.playing_board.set_grid_box(r, c, self.playing_board.static_board.grid[r][c])
+                print("You Lost!")
+                self.display_result()
+            if self.playing_board.played_squares == (
                 (self.playing_board.x * self.playing_board.y) - self.playing_board.bombs_count):
-            print("You Won!")
-            self.win = True
-            self.database.add_score(self.database.get_curr_playr_id(),self.timer.getSecond())
-            self.display_result()
+                print("You Won!")
+                self.win = True
+                self.database.add_score(self.database.get_curr_playr_id(),self.timer.getSecond())
+                self.end_thread()
+                self.display_result()
 
     def set_topbar(self):
         self.topbar_frm.pack(expand=True,fill="both")
@@ -146,6 +153,37 @@ class Game():
         self.end_frm.tkraise()
         self.display_leaderboard()
         result_lbl.pack(expand=True,fill="both")
+
+        play_btn = tk.Button(master=self.end_frm, text="Play Again",command= self.reset_game )
+        play_btn.pack()
+
+    def reset_game(self):
+        self.frm.destroy()
+        self.frm = tk.Frame(master=self.window)
+        self.frm.pack(expand=True)
+
+        self.initial_frm = tk.Frame(master=self.frm)
+        self.main_frm = tk.Frame(master=self.frm)
+        self.topbar_frm = tk.Frame(master=self.main_frm, width=3)
+        self.board_frm = tk.Frame(master=self.main_frm)
+        self.end_frm = tk.Frame(master=self.frm)
+
+        for frm in (self.initial_frm, self.main_frm, self.end_frm):
+            frm.grid(row=0, column=0, sticky='NEWS', padx=10, pady=10)
+            self.frm.grid_columnconfigure(1, weight=1)
+            self.frm.grid_rowconfigure(1, weight=1)
+
+        self.set_initial_frm()
+        self.initial_frm.tkraise()
+
+        self.win = False
+        self.static_board = StaticBoard(self.x, self.y)
+        self.playing_board = PlayingBoard(self.x, self.y, self.board_frm, self.static_board)
+        self.curr_move = None
+        # flag set at 0 initially, increases if a flag is placed on the board
+        self.flags = 0
+        self.timer = Timer(self.topbar_frm)
+        self.timer_thread = threading.Thread(target=self.timer.work, daemon=True)
 
     def display_leaderboard(self):
         leaderboard_frm = tk.Frame(master=self.end_frm)
@@ -192,6 +230,7 @@ class Game():
         self.static_board.display_grid()
 
     def start_timer_thread(self):
-        work1 = threading.Thread(target=self.timer.work, daemon=True)
-        work1.start()
+        self.timer_thread.start()
 
+    def end_thread(self):
+        self.timer.set_kill_true()
